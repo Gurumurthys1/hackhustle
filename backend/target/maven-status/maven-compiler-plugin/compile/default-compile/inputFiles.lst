@@ -1,0 +1,16 @@
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\services\ScraperServiceClient.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\services\FaceVerificationService.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\repositories\ReturnClaimRepository.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FaceCompareRequest.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\controllers\FraudController.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FraudCheckRequest.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FraudCheckResponse.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\FraudApplication.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\ProcessStatus.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FaceCompareResponse.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\ReturnClaim.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FraudDecision.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\controllers\ReturnClaimController.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\FaceRecognitionResult.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\models\ScraperResponse.java
+C:\Users\mitsu\Downloads\TriNetra AI\backend\src\main\java\com\trinetra\fraud\repositories\FaceRecognitionResultRepository.java

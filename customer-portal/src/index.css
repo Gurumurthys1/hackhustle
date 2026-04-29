@@ -1,0 +1,77 @@
+/* TriNetra AI Customer Portal — Design System */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:          #07090F;
+  --bg-card:     #0E1420;
+  --border:      rgba(255,255,255,0.08);
+  --green:       #00D4AA;
+  --green-light: #00FF88;
+  --amber:       #FFB800;
+  --red:         #FF4444;
+  --text:        #FFFFFF;
+  --text-2:      #9AA0B0;
+  --text-3:      #555E70;
+  --font:        'Sora', sans-serif;
+  --radius:      12px;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+a { color: var(--green); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+button:active { transform: scale(0.97); }
+
+input, textarea, select {
+  font-family: var(--font);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(0,212,170,0.12);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.35s ease forwards; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}

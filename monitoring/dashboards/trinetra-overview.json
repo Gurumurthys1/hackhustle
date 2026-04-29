@@ -1,0 +1,45 @@
+{
+  "title": "TriNetra AI — Operations Dashboard",
+  "panels": [
+    {
+      "title": "Claims Per Hour",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "rate(trinetra_claims_total[1h]) * 3600" }]
+    },
+    {
+      "title": "Auto-Approval Rate (Target: >90%)",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ 
+        "expr": "trinetra_claims_total{tier='TRUSTED'} / trinetra_claims_total * 100"
+      }],
+      "fieldConfig": { "min": 0, "max": 100, "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {"value": 0, "color": "red"},
+          {"value": 85, "color": "yellow"},
+          {"value": 90, "color": "green"}
+        ]
+      }}
+    },
+    {
+      "title": "False Positive Rate (CRITICAL - Target: <2%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [{ "expr": "trinetra_false_positive_rate" }]
+    },
+    {
+      "title": "Revenue Protected (INR)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "trinetra_revenue_protected_inr" }]
+    },
+    {
+      "title": "Fraud Rings Active",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "trinetra_fraud_rings_detected_total" }]
+    }
+  ]
+}

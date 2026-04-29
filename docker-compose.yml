@@ -1,0 +1,42 @@
+# NOTE: This is the project-root convenience compose.
+# The full production stack is in infrastructure/docker-compose.yml
+#
+# Usage:
+#   Full stack: docker-compose -f infrastructure/docker-compose.yml up -d
+#   Quick dev (postgres + redis only): docker-compose up -d
+
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trinetra-postgres
+    environment:
+      POSTGRES_DB: trinetra
+      POSTGRES_USER: trinetra
+      POSTGRES_PASSWORD: trinetra_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trinetra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: trinetra-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

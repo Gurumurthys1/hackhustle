@@ -1,0 +1,147 @@
+/* TriNetra AI Admin Dashboard — Design System */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Color Palette */
+  --bg-primary:       #07090F;
+  --bg-secondary:     #0D1117;
+  --bg-card:          rgba(255,255,255,0.025);
+  --bg-card-hover:    rgba(255,255,255,0.04);
+  --border:           rgba(255,255,255,0.07);
+  --border-hover:     rgba(255,255,255,0.14);
+
+  /* Brand Greens */
+  --green-primary:    #00FF88;
+  --green-secondary:  #00D4AA;
+  --green-glow:       rgba(0,255,136,0.15);
+
+  /* Risk Tiers */
+  --risk-trusted:     #00FF88;
+  --risk-caution:     #FFB800;
+  --risk-elevated:    #FF6644;
+  --risk-high:        #FF4444;
+
+  /* Text */
+  --text-primary:     #FFFFFF;
+  --text-secondary:   #A0A8B8;
+  --text-muted:       #555E70;
+  --text-micro:       #383F50;
+
+  /* Typography */
+  --font-body:        'Sora', sans-serif;
+  --font-mono:        'Space Mono', monospace;
+
+  /* Spacing */
+  --sidebar-width:    260px;
+  --header-height:    72px;
+  --radius-sm:        8px;
+  --radius-md:        12px;
+  --radius-lg:        16px;
+  --radius-xl:        24px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Utility */
+.mono { font-family: var(--font-mono); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tier Badge */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+.tier-TRUSTED      { background: rgba(0,255,136,0.12);  color: var(--risk-trusted);  border: 1px solid rgba(0,255,136,0.3); }
+.tier-CAUTION      { background: rgba(255,184,0,0.12);  color: var(--risk-caution);  border: 1px solid rgba(255,184,0,0.3); }
+.tier-ELEVATED_RISK{ background: rgba(255,102,68,0.12); color: var(--risk-elevated); border: 1px solid rgba(255,102,68,0.3); }
+.tier-HIGH_RISK    { background: rgba(255,68,68,0.12);  color: var(--risk-high);     border: 1px solid rgba(255,68,68,0.3); }
+
+/* Card */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-hover); }
+
+/* Stat card */
+.stat-card {
+  composes: card;
+  padding: 24px;
+}
+
+/* Pulse animation */
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 0.3s ease forwards; }
+
+/* Button base */
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+button:active { transform: scale(0.97); }
+
+/* Input base */
+input, textarea, select {
+  font-family: var(--font-body);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--green-secondary);
+}
+
+/* Skeleton loader */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}

@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+*.env
+pip-wheel-metadata/
+
+# ML model caches (large, re-downloaded automatically)
+/tmp/clip_cache/
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# Node / React
+node_modules/
+dashboard/dist/
+dashboard/node_modules/
+customer-portal/dist/
+customer-portal/node_modules/
+.npm
+
+# Java / Maven
+services/return-api/target/
+services/return-api/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+.vscode/settings.json
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
+redis_data/
+minio_data/
+grafana_data/
+
+# Secrets (NEVER commit these)
+.env
+*.env
+services/fraud-engine/.env
+services/graph-service/.env
+services/workers/.env
+services/return-api/src/main/resources/application-prod.properties
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# OS
+.DS_Store
+desktop.ini
+
+# Antigravity / IDE internal
+.antigravity/
+.gemini/

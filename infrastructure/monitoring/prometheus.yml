@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'fraud-engine'
+    static_configs:
+      - targets: ['host.docker.internal:8002']
+    metrics_path: /metrics
+
+  - job_name: 'graph-service'
+    static_configs:
+      - targets: ['host.docker.internal:8001']
+    metrics_path: /metrics
+
+  - job_name: 'return-api'
+    static_configs:
+      - targets: ['host.docker.internal:8085']
+    metrics_path: /actuator/prometheus
+
+  - job_name: 'redpanda'
+    static_configs:
+      - targets: ['redpanda:9090']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

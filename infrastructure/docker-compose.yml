@@ -1,0 +1,98 @@
+version: '3.9'
+
+services:
+  # ── DATABASES ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trinetra
+      POSTGRES_USER: trinetra
+      POSTGRES_PASSWORD: trinetra_dev
+    ports: ["5433:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trinetra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    ports: ["6379:6379"]
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # ── MESSAGE QUEUE ───────────────────────────────────────
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --reserve-memory 0M
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports: ["9092:9092", "29092:29092"]
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+
+  redpanda-console:
+    image: redpandadata/console:latest
+    ports: ["8081:8080"]
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    depends_on: [redpanda]
+
+  # ── OBJECT STORAGE ──────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    environment:
+      MINIO_ROOT_USER: trinetra
+      MINIO_ROOT_PASSWORD: trinetra_dev_secret
+    volumes:
+      - minio_data:/data
+
+  # ── MONITORING ──────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3001:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on: [prometheus]
+
+
+  # ── API GATEWAY ─────────────────────────────────────────
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports: ["80:80", "8090:8080"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  postgres_data:
+  redis_data:
+  redpanda_data:
+  minio_data:
+  grafana_data:
