@@ -17,7 +17,7 @@ graph TD
     classDef admin fill:#483285,stroke:none,color:white
     classDef kafka fill:#804A00,stroke:none,color:white
     classDef fraud fill:#732612,stroke:none,color:white
-    classDef graph fill:#423089,stroke:none,color:white
+    classDef graphSvc fill:#423089,stroke:none,color:white
     classDef celery fill:#4D4D4D,stroke:none,color:white
     classDef dpdpa fill:#0B5D43,stroke:none,color:white
     classDef detector fill:#732612,stroke:none,color:white
@@ -32,7 +32,7 @@ graph TD
     SBOOT --> KAFKA["Redpanda (Kafka API)"]:::kafka
     
     KAFKA --> FE["Fraud engine<br/>FastAPI · 6 detectors"]:::fraud
-    KAFKA --> GS["Graph service<br/>NetworkX · ring detection"]:::graph
+    KAFKA --> GS["Graph service<br/>NetworkX · ring detection"]:::graphSvc
     KAFKA --> CW["Celery workers<br/>Image · receipt · carrier"]:::celery
     
     subgraph Detectors [ ]
