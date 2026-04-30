@@ -23,8 +23,6 @@ graph TD
     classDef detector fill:#732612,stroke:none,color:white
     classDef detector2 fill:#804A00,stroke:none,color:white
     classDef detector3 fill:#0B5D43,stroke:none,color:white
-    classDef infra fill:#4D4D4D,stroke:none,color:white
-    classDef prom fill:#255A0B,stroke:none,color:white
 
     CP["Customer portal<br/>Submit return claim"]:::portal --> SBOOT["Spring Boot Return API<br/>Claim submit · state machine"]:::spring
     SBOOT --> AD["Admin dashboard<br/>D3.js ring graph"]:::admin
@@ -48,6 +46,10 @@ graph TD
     D_CLIP --> SE["Score engine<br/>0–100 · 4 tiers"]:::spring
     GS --> SE
     
+    %% Force vertical alignment
+    SE ~~~ DPDPA
+    
+    DPDPA["DPDPA compliance layer<br/>Consent · immutable audit log · no auto-block · data retention 24 months"]:::dpdpa
 ```
 
 ### Modern Open-Source Stack
