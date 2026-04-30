@@ -12,45 +12,55 @@ Our architecture is built on a modern, event-driven, Python and JavaScript stack
 
 ```mermaid
 graph TD
-    classDef frontend fill:#1E293B,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
-    classDef backend fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#F8FAFC
-    classDef db fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC
-    classDef ai fill:#1E293B,stroke:#8B5CF6,stroke-width:2px,color:#F8FAFC
-    classDef device fill:#1E293B,stroke:#F43F5E,stroke-width:2px,color:#F8FAFC
+    classDef portal fill:#0B5D43,stroke:none,color:white
+    classDef spring fill:#104785,stroke:none,color:white
+    classDef admin fill:#483285,stroke:none,color:white
+    classDef kafka fill:#804A00,stroke:none,color:white
+    classDef fraud fill:#732612,stroke:none,color:white
+    classDef graph fill:#423089,stroke:none,color:white
+    classDef celery fill:#4D4D4D,stroke:none,color:white
+    classDef dpdpa fill:#0B5D43,stroke:none,color:white
+    classDef detector fill:#732612,stroke:none,color:white
+    classDef detector2 fill:#804A00,stroke:none,color:white
+    classDef detector3 fill:#0B5D43,stroke:none,color:white
+    classDef infra fill:#4D4D4D,stroke:none,color:white
+    classDef prom fill:#255A0B,stroke:none,color:white
 
-    subgraph Client_Layer [Client Layer]
-        CP["🖥️ Customer Portal (React + Vite)"]:::frontend
-        AD["📊 Admin Dashboard (React + Vite)"]:::frontend
-        IPCam["📱 Mobile/IP Camera (Live Capture)"]:::device
-    end
-
-    subgraph API_Services [API & Microservices]
-        FE["⚙️ Fraud Engine API (FastAPI)"]:::backend
-    end
-
-    subgraph Core_AI [Core AI Intelligence Layer]
-        CV["👁️ Computer Vision (TensorFlow / ELA)"]:::ai
-        GEO["📍 Geolocation Analysis (Carrier GPS)"]:::ai
-        GRAPH["🕸️ Network Analysis (Fraud Rings)"]:::ai
-        BEHAV["👤 Behavioral Engine (Velocity)"]:::ai
-    end
-
-    subgraph Data_Layer [Data Layer]
-        MONGO[("🗄️ MongoDB Atlas (Document & Graph DB)")]:::db
-    end
-
-    IPCam -->|"Live Video Stream"| CP
-    CP -->|"1. Submit Evidence + GPS"| FE
-    AD -->|"Fetch Claims & Visuals"| FE
+    CP["Customer portal<br/>Submit return claim"]:::portal --> SBOOT["Spring Boot Return API<br/>Claim submit · state machine"]:::spring
+    SBOOT --> AD["Admin dashboard<br/>D3.js ring graph"]:::admin
     
-    FE -->|"2. Analyze Pixels"| CV
-    FE -->|"3. Verify Carrier Location"| GEO
-    FE -->|"4. Link Account Graph"| GRAPH
-    FE -->|"5. Run Historical Checks"| BEHAV
+    SBOOT --> KAFKA["Redpanda (Kafka API)"]:::kafka
     
-    FE == "6. Read/Write Evidence & Scores" ==> MONGO
-    CV -.-> MONGO
-    GRAPH -.-> MONGO
+    KAFKA --> FE["Fraud engine<br/>FastAPI · 6 detectors"]:::fraud
+    KAFKA --> GS["Graph service<br/>NetworkX · ring detection"]:::graph
+    KAFKA --> CW["Celery workers<br/>Image · receipt · carrier"]:::celery
+    
+    subgraph Detectors [ ]
+        style Detectors fill:transparent,stroke:none
+        D_ELA["ELA"]:::detector
+        D_EXIF["EXIF"]:::detector
+        D_PHASH["pHash"]:::detector2
+        D_CLIP["CLIP"]:::detector2
+        D_OCR["OCR"]:::detector3
+        D_BEH["Behavior"]:::detector3
+    end
+    
+    FE --> D_ELA
+    
+    D_CLIP --> SE["Score engine<br/>0–100 · 4 tiers"]:::spring
+    GS --> SE
+    
+    subgraph Infra [—— infrastructure layer ——]
+        style Infra fill:transparent,stroke:none,color:#999
+        PG["PostgreSQL"]:::infra
+        REDIS["Redis"]:::infra
+        MINIO["MinIO"]:::infra
+        TRAEFIK["Traefik"]:::infra
+        PROM["Prometheus"]:::prom
+        GRAF["Grafana"]:::prom
+    end
+    
+    DPDPA["DPDPA compliance layer<br/>Consent · immutable audit log · no auto-block · data retention 24 months"]:::dpdpa
 ```
 
 ### Modern Open-Source Stack
