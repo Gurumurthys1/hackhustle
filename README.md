@@ -35,23 +35,22 @@ graph TD
     KAFKA --> GS["Graph service<br/>NetworkX · ring detection"]:::graphSvc
     KAFKA --> CW["Celery workers<br/>Image · receipt · carrier"]:::celery
     
-    subgraph Detectors [ ]
-        style Detectors fill:transparent,stroke:none
-        D_ELA["ELA"]:::detector
-        D_EXIF["EXIF"]:::detector
-        D_PHASH["pHash"]:::detector2
-        D_CLIP["CLIP"]:::detector2
-        D_OCR["OCR"]:::detector3
-        D_BEH["Behavior"]:::detector3
-    end
+    %% Aligning the 6 detectors below the Fraud Engine
+    FE --> D_ELA["ELA"]:::detector
+    FE --> D_EXIF["EXIF"]:::detector
     
-    FE --> D_ELA
+    D_ELA ~~~ D_PHASH["pHash"]:::detector2
+    D_EXIF ~~~ D_CLIP["CLIP"]:::detector2
+    
+    D_PHASH ~~~ D_OCR["OCR"]:::detector3
+    D_CLIP ~~~ D_BEH["Behavior"]:::detector3
     
     D_CLIP --> SE["Score engine<br/>0–100 · 4 tiers"]:::spring
     GS --> SE
     
     subgraph Infra [—— infrastructure layer ——]
         style Infra fill:transparent,stroke:none,color:#999
+        direction LR
         PG["PostgreSQL"]:::infra
         REDIS["Redis"]:::infra
         MINIO["MinIO"]:::infra
@@ -60,7 +59,12 @@ graph TD
         GRAF["Grafana"]:::prom
     end
     
+    %% Force vertical alignment
+    SE ~~~ Infra
+    
     DPDPA["DPDPA compliance layer<br/>Consent · immutable audit log · no auto-block · data retention 24 months"]:::dpdpa
+    
+    Infra ~~~ DPDPA
 ```
 
 ### Modern Open-Source Stack
