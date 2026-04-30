@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
+import { fetchMetrics } from '../api'
 
 const DAILY_SCORES = [
   { day: 'Jun 16', auto: 94, manual: 5, escalated: 1 },
@@ -56,19 +57,52 @@ function MetricCard({ label, value, sub, color, hint }) {
 }
 
 export default function ModelPerformance() {
+  const [metrics, setMetrics] = useState({
+    auto_approval_rate: 94.1,
+    false_positive_rate: 1.4,
+    fraud_detection_rate: 89.3,
+    avg_latency_seconds: 3.2,
+    score_distribution: {},
+    detector_performance: DETECTOR_PERF
+  })
+  const [liveData, setLiveData] = useState(false)
+
+  useEffect(() => {
+    fetchMetrics()
+      .then(data => {
+        if (data && typeof data.auto_approval_rate !== 'undefined') {
+          setMetrics(data)
+          setLiveData(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const currentScoreDist = SCORE_DIST.map(sd => ({
+    ...sd,
+    count: metrics.score_distribution[sd.range] !== undefined ? metrics.score_distribution[sd.range] : sd.count
+  }))
+
+  const detectors = metrics.detector_performance && metrics.detector_performance.length > 0 
+    ? metrics.detector_performance 
+    : DETECTOR_PERF
+
   return (
     <div style={{ padding: 32, minHeight: '100vh' }}>
       <header style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5, marginBottom: 4 }}>Model Performance</h1>
-        <p style={{ color: '#555', fontSize: 13 }}>Live metrics for all 6 fraud detection components — last 7 days</p>
+        <p style={{ color: '#555', fontSize: 13 }}>
+          Live metrics for all 6 fraud detection components
+          {liveData && <span style={{ marginLeft: 10, color: '#00D4AA', fontSize: 11 }}>● LIVE from MongoDB</span>}
+        </p>
       </header>
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 32 }}>
-        <MetricCard label="AUTO-APPROVAL RATE" value="94.1%" color="#00FF88" hint="Target: ≥ 90%" />
-        <MetricCard label="FALSE POSITIVE RATE" value="1.4%" color="#00D4AA" hint="Target: ≤ 2% (CRITICAL)" />
-        <MetricCard label="FRAUD DETECTION RATE" value="89.3%" color="#FFB800" hint="Based on confirmed fraud" />
-        <MetricCard label="AVG SCORE LATENCY" value="3.2s" color="#7C7CFF" hint="Full pipeline (<10s SLA)" />
+        <MetricCard label="AUTO-APPROVAL RATE" value={`${metrics.auto_approval_rate}%`} color="#00FF88" hint="Target: ≥ 90%" />
+        <MetricCard label="FALSE POSITIVE RATE" value={`${metrics.false_positive_rate}%`} color="#00D4AA" hint="Target: ≤ 2% (CRITICAL)" />
+        <MetricCard label="FRAUD DETECTION RATE" value={`${metrics.fraud_detection_rate}%`} color="#FFB800" hint="Based on confirmed fraud" />
+        <MetricCard label="AVG SCORE LATENCY" value={`${metrics.avg_latency_seconds}s`} color="#7C7CFF" hint="Full pipeline (<10s SLA)" />
       </div>
 
       {/* Two-column charts */}
@@ -107,12 +141,12 @@ export default function ModelPerformance() {
             FRAUD SCORE DISTRIBUTION — TODAY
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={SCORE_DIST}>
+            <BarChart data={currentScoreDist}>
               <XAxis dataKey="range" tick={{ fontSize: 10, fill: '#555' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#555' }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={CUSTOM_TOOLTIP_STYLE} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Claims">
-                {SCORE_DIST.map((entry, i) => (
+                {currentScoreDist.map((entry, i) => (
                   <Cell key={i} fill={TIER_COLORS_MAP[entry.tier]} opacity={0.8} />
                 ))}
               </Bar>
@@ -130,7 +164,7 @@ export default function ModelPerformance() {
           DETECTOR PERFORMANCE — PRECISION / RECALL / F1
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {DETECTOR_PERF.map(d => (
+          {detectors.map(d => (
             <div key={d.name} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', alignItems: 'center', gap: 16 }}>
               <span style={{ fontSize: 13, color: '#ccc' }}>{d.name}</span>
               {[

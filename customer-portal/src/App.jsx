@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
+import Orders from './pages/Orders.jsx'
 import SubmitReturn from './pages/SubmitReturn.jsx'
 import TrackReturn from './pages/TrackReturn.jsx'
 
@@ -33,6 +34,14 @@ function Header() {
           border: `1px solid ${pathname === '/' ? 'rgba(0,255,136,0.3)' : 'transparent'}`,
           color: pathname === '/' ? '#00FF88' : '#888',
         }}>
+          My Orders
+        </Link>
+        <Link to="/return" style={{
+          padding: '8px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+          background: pathname === '/return' ? 'rgba(0,212,170,0.1)' : 'transparent',
+          border: `1px solid ${pathname === '/return' ? 'rgba(0,212,170,0.3)' : 'transparent'}`,
+          color: pathname === '/return' ? '#00D4AA' : '#888',
+        }}>
           Start Return
         </Link>
         <Link to="/track" style={{
@@ -55,7 +64,8 @@ export default function App() {
         <Header />
         <main style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 48 }}>
           <Routes>
-            <Route path="/"      element={<SubmitReturn />} />
+            <Route path="/"      element={<Orders />} />
+            <Route path="/return" element={<SubmitReturn />} />
             <Route path="/track" element={<TrackReturn />} />
           </Routes>
         </main>

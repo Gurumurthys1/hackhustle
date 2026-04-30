@@ -1,43 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Lock, Search, Shield, User, Cpu, Filter } from 'lucide-react'
+import { fetchAuditLog } from '../api'
 
 const ACTOR_ICONS = { SYSTEM: Cpu, ADMIN: User, CUSTOMER: Shield }
 const ACTOR_COLORS = { SYSTEM: '#7C7CFF', ADMIN: '#FFB800', CUSTOMER: '#00D4AA' }
 
-const MOCK_LOGS = [
-  { id: 1, entity_type: 'return_claims', entity_id: 'CLM-2024-0041', action: 'CLAIM_SUBMITTED',
-    actor_type: 'CUSTOMER', actor_id: 'CUST-RING-003',
-    metadata: { ip: '10.0.1.42', device: 'fp_abc123' },
-    created_at: '2024-06-22 14:32:11 IST' },
-  { id: 2, entity_type: 'return_claims', entity_id: 'CLM-2024-0041', action: 'FRAUD_SCORE_COMPUTED',
-    actor_type: 'SYSTEM', actor_id: 'fraud-engine-v3',
-    metadata: { score: 92, tier: 'HIGH_RISK', latency_ms: 2840 },
-    created_at: '2024-06-22 14:32:14 IST' },
-  { id: 3, entity_type: 'return_claims', entity_id: 'CLM-2024-0041', action: 'ESCALATED_TO_SENIOR_REVIEW',
-    actor_type: 'SYSTEM', actor_id: 'fraud-engine-v3',
-    metadata: { reason: 'Score >= 80, FRAUD_RING_MEMBER evidence' },
-    created_at: '2024-06-22 14:32:14 IST' },
-  { id: 4, entity_type: 'fraud_rings', entity_id: 'RING-0001', action: 'RING_CONFIRMED',
-    actor_type: 'ADMIN', actor_id: 'admin@trinetra.ai',
-    metadata: { members: 7, total_value: 187400, confidence: 0.97 },
-    created_at: '2024-06-22 14:15:02 IST' },
-  { id: 5, entity_type: 'return_claims', entity_id: 'CLM-2024-0037', action: 'CLAIM_AUTO_APPROVED',
-    actor_type: 'SYSTEM', actor_id: 'fraud-engine-v3',
-    metadata: { score: 8, tier: 'TRUSTED', latency_ms: 1120 },
-    created_at: '2024-06-22 14:10:44 IST' },
-  { id: 6, entity_type: 'accounts', entity_id: 'CUST-FRAUDSTER-002', action: 'BEHAVIORAL_SCORE_UPDATED',
-    actor_type: 'SYSTEM', actor_id: 'behavioral-worker',
-    metadata: { new_percentile: 97.2, inr_count_90d: 5 },
-    created_at: '2024-06-22 13:58:22 IST' },
-  { id: 7, entity_type: 'return_claims', entity_id: 'CLM-2024-0039', action: 'REVIEWER_REQUESTED_INFO',
-    actor_type: 'ADMIN', actor_id: 'reviewer2@trinetra.ai',
-    metadata: { request: 'Additional photo of damaged area required' },
-    created_at: '2024-06-22 13:44:08 IST' },
-  { id: 8, entity_type: 'return_claims', entity_id: 'CLM-2024-0034', action: 'CLAIM_AUTO_APPROVED',
-    actor_type: 'SYSTEM', actor_id: 'fraud-engine-v3',
-    metadata: { score: 5, tier: 'TRUSTED', latency_ms: 980 },
-    created_at: '2024-06-22 13:16:31 IST' },
-]
+
 
 const ACTION_COLOR = {
   CLAIM_SUBMITTED:            '#00D4AA',
@@ -50,14 +18,27 @@ const ACTION_COLOR = {
 }
 
 export default function AuditLog() {
+  const [logs, setLogs] = useState([])
   const [search, setSearch] = useState('')
   const [actorFilter, setActorFilter] = useState('ALL')
+  const [liveData, setLiveData] = useState(false)
 
-  const filtered = MOCK_LOGS.filter(l =>
+  useEffect(() => {
+    fetchAuditLog('ALL', 100)
+      .then(data => {
+        if (data.entries && data.entries.length > 0) {
+          setLogs(data.entries)
+          setLiveData(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const filtered = logs.filter(l =>
     (actorFilter === 'ALL' || l.actor_type === actorFilter) &&
-    (l.action.toLowerCase().includes(search.toLowerCase()) ||
-     l.entity_id.toLowerCase().includes(search.toLowerCase()) ||
-     l.actor_id.toLowerCase().includes(search.toLowerCase()))
+    (l.action?.toLowerCase().includes(search.toLowerCase()) ||
+     l.entity_id?.toLowerCase().includes(search.toLowerCase()) ||
+     l.actor_id?.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
@@ -69,6 +50,7 @@ export default function AuditLog() {
         </div>
         <p style={{ color: '#555', fontSize: 13 }}>
           Immutable, append-only event log — DPDPA compliant. DELETE and UPDATE are revoked at DB level.
+          {liveData && <span style={{ marginLeft: 10, color: '#00D4AA', fontSize: 11 }}>● LIVE from MongoDB</span>}
         </p>
         {/* Compliance badge */}
         <div style={{
@@ -134,12 +116,12 @@ export default function AuditLog() {
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <div style={{ fontSize: 10, color: '#555', fontFamily: 'Space Mono, monospace' }}>
-                {log.created_at.split(' ').slice(1).join(' ')}
+                {typeof log.created_at === 'string' ? log.created_at.split(' ').slice(1).join(' ').replace('T', ' ').slice(0, 8) : ''}
               </div>
               <div>
                 <div style={{ fontSize: 10, color: '#777', marginBottom: 2 }}>{log.entity_type}</div>
                 <div style={{ fontSize: 11, fontFamily: 'Space Mono, monospace', color: '#00D4AA' }}>
-                  {log.entity_id.slice(0, 20)}
+                  {log.entity_id ? log.entity_id.slice(0, 20) : 'N/A'}
                 </div>
               </div>
               <div style={{
@@ -169,7 +151,7 @@ export default function AuditLog() {
       </div>
 
       <div style={{ marginTop: 16, fontSize: 11, color: '#444', textAlign: 'center' }}>
-        Showing {filtered.length} of {MOCK_LOGS.length} entries ·
+        Showing {filtered.length} of {logs.length} entries ·
         <span style={{ color: '#00FF88', marginLeft: 6 }}>
           Records are cryptographically append-only — no modifications permitted
         </span>

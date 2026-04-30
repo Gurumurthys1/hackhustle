@@ -17,6 +17,20 @@ const CATEGORY_ICONS = {
   graph:     { icon: Network, label: 'Network Analysis' },
 };
 
+const SIGNAL_CATEGORY_MAP = {
+  'IMAGE': 'image',
+  'EXIF': 'image',
+  'PRODUCT_MISMATCH': 'image',
+  'RECEIPT': 'receipt',
+  'BEHAVIORAL': 'behavioral',
+  'SHARED_DEVICE': 'behavioral',
+  'SHARED_IP': 'behavioral',
+  'HIGH_INR': 'behavioral',
+  'CARRIER': 'carrier',
+  'FRAUD_RING': 'graph',
+  'NETWORK': 'graph',
+};
+
 export function EvidencePanel({ claim, onDecision }) {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -26,6 +40,26 @@ export function EvidencePanel({ claim, onDecision }) {
     ELEVATED_RISK:'#FF6644',
     HIGH_RISK:    '#FF4444',
   };
+
+  const computedSubScores = { image: 0, receipt: 0, behavioral: 0, carrier: 0, graph: 0 };
+  
+  if (claim?.evidence) {
+    claim.evidence.forEach(ev => {
+      const type = ev.signal || ev.type || '';
+      const points = ev.points || ev.score_added || 0;
+      
+      let category = 'behavioral'; // fallback
+      for (const [key, val] of Object.entries(SIGNAL_CATEGORY_MAP)) {
+        if (type.includes(key)) {
+          category = val;
+          break;
+        }
+      }
+      computedSubScores[category] += points;
+    });
+  }
+
+  const finalSubScores = claim?.sub_scores || computedSubScores;
 
   return (
     <div style={{
@@ -88,12 +122,35 @@ export function EvidencePanel({ claim, onDecision }) {
             <Icon size={14} color="#00D4AA" style={{ marginBottom: 4 }} />
             <div style={{ color: '#fff', fontSize: 13, fontWeight: 700,
                           fontFamily: 'Space Mono, monospace' }}>
-              +{claim?.sub_scores?.[key] || 0}
+              +{finalSubScores[key] || 0}
             </div>
             <div style={{ color: '#888', fontSize: 9, marginTop: 2 }}>{label}</div>
           </div>
         ))}
       </div>
+
+      {/* Visual Image Comparison */}
+      {(claim?.expected_product_image || claim?.captured_image_base64) && (
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16 }}>
+          <div style={{ color: '#888', fontSize: 11, letterSpacing: 2, marginBottom: 12, textAlign: 'center' }}>
+            VISUAL INSPECTION
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            {claim?.expected_product_image && (
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>EXPECTED ITEM</div>
+                <img src={claim.expected_product_image} alt="Expected" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+              </div>
+            )}
+            {claim?.captured_image_base64 && (
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>RETURNED ITEM</div>
+                <img src={claim.captured_image_base64} alt="Returned" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Evidence List */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -101,7 +158,16 @@ export function EvidencePanel({ claim, onDecision }) {
           EVIDENCE LOG
         </div>
         {claim?.evidence?.map((ev, i) => {
-          const style = SEVERITY_STYLES[ev.severity] || SEVERITY_STYLES.LOW;
+          const type = ev.signal || ev.type || 'UNKNOWN_SIGNAL';
+          const points = ev.points || ev.score_added || 0;
+          let severity = ev.severity;
+          if (!severity) {
+             if (points >= 30) severity = 'CRITICAL';
+             else if (points >= 20) severity = 'HIGH';
+             else if (points >= 10) severity = 'MEDIUM';
+             else severity = 'LOW';
+          }
+          const style = SEVERITY_STYLES[severity] || SEVERITY_STYLES.LOW;
           const Icon = style.icon;
           return (
             <div key={i} style={{
@@ -114,7 +180,7 @@ export function EvidencePanel({ claim, onDecision }) {
               <div>
                 <div style={{ color: style.color, fontSize: 10, letterSpacing: 1,
                               fontFamily: 'Space Mono, monospace', marginBottom: 2 }}>
-                  {ev.type} · +{ev.score_added}pts
+                  {type} · +{points}pts
                 </div>
                 <div style={{ color: '#ccc', fontSize: 12 }}>{ev.detail}</div>
               </div>

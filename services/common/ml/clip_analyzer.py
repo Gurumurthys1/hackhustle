@@ -59,12 +59,13 @@ def compute_clip_similarity(
         
         # CLIP cosine similarity ranges: 0.9+ same image, 0.7+ same product,
         # 0.4–0.6 similar category, < 0.4 different product
+        # We use a strict threshold of 0.65 to catch similar but incorrect items (e.g., water bottle vs soda)
         return CLIPResult(
             similarity_score=similarity,
-            product_match=similarity >= 0.45,
+            product_match=similarity >= 0.65,
             confidence=0.88
         )
     
     except Exception as e:
         log.error("CLIP analysis failed", error=str(e))
-        return CLIPResult(0.5, True, 0.0)  # Default to safe on error
+        return CLIPResult(0.0, False, 0.0)  # Default to mismatch on error to force review

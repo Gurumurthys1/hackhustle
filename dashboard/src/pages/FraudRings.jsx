@@ -1,40 +1,8 @@
-import { useState } from 'react'
-import { AlertTriangle, Users, TrendingUp, ExternalLink, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { AlertTriangle, Users, ChevronRight } from 'lucide-react'
+import { fetchRings } from '../api'
 
-const MOCK_RINGS = [
-  {
-    id: 'RING-0001', name: 'Mumbai Fast Return Cluster', status: 'CONFIRMED',
-    members: 7, value: 187400, prevented: 124000, confidence: 0.97,
-    algorithm: 'Louvain + PageRank', detected: '2024-06-14',
-    accounts: ['CUST-RING-003', 'CUST-RING-004', 'CUST-RING-005', 'CUST-007X', 'CUST-009X', 'CUST-011Y', 'CUST-013Z'],
-    shared_signal: 'USES_DEVICE (3 accounts), SHARES_ADDRESS (4 accounts)',
-    leader: 'CUST-RING-003',
-  },
-  {
-    id: 'RING-0002', name: 'Delhi INR Syndicate', status: 'ACTIVE',
-    members: 4, value: 62300, prevented: 41000, confidence: 0.84,
-    algorithm: 'Louvain', detected: '2024-06-18',
-    accounts: ['CUST-FRAUDSTER-002', 'CUST-022A', 'CUST-024B', 'CUST-031C'],
-    shared_signal: 'SHARES_IP (all 4), SAME_PHONE (2 accounts)',
-    leader: 'CUST-FRAUDSTER-002',
-  },
-  {
-    id: 'RING-0003', name: 'Wardrobing Cluster Alpha', status: 'UNDER_INVESTIGATION',
-    members: 5, value: 44750, prevented: 12000, confidence: 0.71,
-    algorithm: 'Temporal Burst', detected: '2024-06-21',
-    accounts: ['CUST-041D', 'CUST-043E', 'CUST-047F', 'CUST-052G', 'CUST-058H'],
-    shared_signal: 'Simultaneous burst (5 claims in 2hrs), USES_DEVICE (2 accounts)',
-    leader: 'CUST-041D',
-  },
-  {
-    id: 'RING-0004', name: 'Refund Abuse Group', status: 'ACTIVE',
-    members: 3, value: 31200, prevented: 0, confidence: 0.68,
-    algorithm: 'Community Detection', detected: '2024-06-22',
-    accounts: ['CUST-061I', 'CUST-064J', 'CUST-069K'],
-    shared_signal: 'SHARES_ADDRESS, repeated INR claims',
-    leader: 'CUST-061I',
-  },
-]
+
 
 const STATUS_STYLE = {
   CONFIRMED:             { bg: 'rgba(255,68,68,0.12)',  text: '#FF4444', border: 'rgba(255,68,68,0.3)' },
@@ -57,22 +25,48 @@ function ConfidenceBar({ value }) {
 }
 
 export default function FraudRings() {
+  const [rings, setRings]       = useState([])
+  const [summary, setSummary]   = useState(null)
   const [expanded, setExpanded] = useState(null)
-  const total = MOCK_RINGS.reduce((a, r) => a + r.value, 0)
-  const totalPrevented = MOCK_RINGS.reduce((a, r) => a + r.prevented, 0)
+  const [liveData, setLiveData] = useState(false)
+
+  useEffect(() => {
+    fetchRings()
+      .then(data => {
+        if (data.rings && data.rings.length > 0) {
+          setRings(data.rings.map(r => ({
+            id: r.id, name: r.ring_name, status: r.status,
+            members: r.member_count, value: r.total_claimed, prevented: r.total_prevented,
+            confidence: r.confidence, algorithm: r.algorithm,
+            detected: r.detected_at ? r.detected_at.slice(0,10) : '',
+            accounts: r.members.map(m => m.account_id),
+            leader: r.members.find(m => m.role === 'RING_LEADER')?.account_id || r.members[0]?.account_id,
+            shared_signal: r.metadata ? Object.entries(r.metadata).map(([k,v])=>`${k}: ${v}`).join(', ') : '',
+          })))
+          setSummary(data)
+          setLiveData(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const total          = rings.reduce((a, r) => a + r.value, 0)
+  const totalPrevented = rings.reduce((a, r) => a + r.prevented, 0)
 
   return (
     <div style={{ padding: 32, minHeight: '100vh' }}>
       <header style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5, marginBottom: 4 }}>Fraud Ring Intelligence</h1>
-        <p style={{ color: '#555', fontSize: 13 }}>Coordinated return fraud networks identified via graph community detection</p>
+        <p style={{ color: '#555', fontSize: 13 }}>Coordinated return fraud networks identified via graph community detection
+          {liveData && <span style={{ marginLeft: 10, color: '#00D4AA', fontSize: 11 }}>● LIVE from MongoDB</span>}
+        </p>
       </header>
 
       {/* Summary KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 32 }}>
         {[
-          { label: 'ACTIVE RINGS',       value: MOCK_RINGS.filter(r => r.status !== 'CLOSED').length, color: '#FF4444' },
-          { label: 'TOTAL MEMBERS',      value: MOCK_RINGS.reduce((a, r) => a + r.members, 0),         color: '#FFB800' },
+          { label: 'ACTIVE RINGS',    value: rings.filter(r => r.status !== 'CLOSED').length, color: '#FF4444' },
+          { label: 'TOTAL MEMBERS',   value: rings.reduce((a, r) => a + r.members, 0),         color: '#FFB800' },
           { label: 'CLAIMED VALUE',      value: `₹${(total/1000).toFixed(0)}K`,                         color: '#FF6644' },
           { label: 'VALUE PREVENTED',    value: `₹${(totalPrevented/1000).toFixed(0)}K`,                color: '#00FF88' },
         ].map(kpi => (
@@ -90,7 +84,7 @@ export default function FraudRings() {
 
       {/* Ring Cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {MOCK_RINGS.map(ring => {
+        {rings.map(ring => {
           const isExpanded = expanded === ring.id
           const sc = STATUS_STYLE[ring.status] || STATUS_STYLE.CLOSED
           return (

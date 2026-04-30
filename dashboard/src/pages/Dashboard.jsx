@@ -2,45 +2,8 @@ import { useState, useEffect } from 'react'
 import { Activity, ShieldAlert, ShieldCheck, Layers, Bell, Search, Network } from 'lucide-react'
 import { RingNetworkGraph } from '../components/RingNetworkGraph.jsx'
 import { EvidencePanel } from '../components/EvidencePanel.jsx'
+import { fetchKPIs, fetchGraph, fetchClaims, fetchClaim } from '../api'
 
-/* ── Mock data (replaced by real API calls in production) ── */
-const MOCK_GRAPH_DATA = {
-  nodes: [
-    { id: 'acc_001', type: 'account', risk_score: 12 },
-    { id: 'acc_002', type: 'account', risk_score: 87 },
-    { id: 'acc_003', type: 'account', risk_score: 91 },
-    { id: 'acc_004', type: 'account', risk_score: 78 },
-    { id: 'dev_abc', type: 'device' },
-    { id: 'dev_xyz', type: 'device' },
-    { id: 'ip_10_0', type: 'ip' },
-    { id: 'addr_mumbai', type: 'address' },
-  ],
-  links: [
-    { source: 'acc_002', target: 'dev_abc',    relationship: 'USES_DEVICE' },
-    { source: 'acc_003', target: 'dev_abc',    relationship: 'USES_DEVICE' },
-    { source: 'acc_004', target: 'dev_xyz',    relationship: 'USES_DEVICE' },
-    { source: 'acc_002', target: 'ip_10_0',    relationship: 'SHARES_IP' },
-    { source: 'acc_003', target: 'ip_10_0',    relationship: 'SHARES_IP' },
-    { source: 'acc_003', target: 'addr_mumbai',relationship: 'SHARES_ADDRESS' },
-    { source: 'acc_004', target: 'addr_mumbai',relationship: 'SHARES_ADDRESS' },
-    { source: 'acc_001', target: 'dev_xyz',    relationship: 'USES_DEVICE' },
-  ],
-  account_id: 'acc_002',
-}
-
-const MOCK_CLAIM = {
-  account_id: 'acc_002',
-  fraud_score: 82,
-  fraud_tier: 'HIGH_RISK',
-  sub_scores: { image: 35, receipt: 20, behavioral: 15, carrier: 7, graph: 5 },
-  evidence: [
-    { type: 'IMAGE_ELA',              severity: 'HIGH',     detail: 'Localized editing detected in bottom-right quadrant',   score_added: 20 },
-    { type: 'EXIF_DATE_MISMATCH',     severity: 'HIGH',     detail: 'Photo taken 3 days before purchase date',               score_added: 15 },
-    { type: 'RECEIPT_AMOUNT_MISMATCH',severity: 'HIGH',     detail: 'Receipt: ₹2,999 vs Order: ₹4,599 (35% variance)',       score_added: 20 },
-    { type: 'SHARED_DEVICE_FINGERPRINT', severity: 'MEDIUM', detail: 'Device fingerprint shared with 2 other accounts',      score_added: 15 },
-    { type: 'HIGH_INR_RATE',          severity: 'MEDIUM',   detail: '4 INR claims in last 90 days (threshold: 2)',           score_added: 12 },
-  ],
-}
 
 const STATS = [
   { label: 'CLAIMS / HOUR',  value: '247', change: '+12%', icon: Activity,    color: '#00D4AA' },
@@ -79,9 +42,36 @@ function StatCard({ stat }) {
 }
 
 export default function Dashboard() {
-  const [selectedClaim, setSelectedClaim] = useState(MOCK_CLAIM)
+  const [selectedClaim, setSelectedClaim] = useState(null)
   const [activeTab, setActiveTab] = useState('Network View')
+  const [kpis, setKpis] = useState({
+    claims_per_hour: 0, auto_approved: 0, auto_approval_pct: 0,
+    in_review: 0, in_review_pct: 0, rings_detected: 0
+  })
+  const [graphData, setGraphData] = useState({ nodes: [], links: [] })
+  const [liveData, setLiveData] = useState(false)
   const TABS = ['Network View', 'Entity Clusters', 'Temporal Flow']
+
+  useEffect(() => {
+    Promise.all([fetchKPIs(), fetchGraph()])
+      .then(([kpiData, gData]) => {
+        if (kpiData) {
+          setKpis(kpiData)
+        }
+        if (gData && gData.nodes && gData.nodes.length > 0) {
+          setGraphData({ ...gData, account_id: gData.nodes[0]?.id })
+        }
+        setLiveData(true)
+      })
+      .catch(() => {})
+  }, [])
+
+  const STATS = [
+    { label: 'CLAIMS',  value: kpis.claims_per_hour, icon: Activity,    color: '#00D4AA' },
+    { label: 'AUTO-APPROVED',  value: kpis.auto_approved, sub: `${kpis.auto_approval_pct}%`, icon: ShieldCheck, color: '#00FF88' },
+    { label: 'IN REVIEW',      value: kpis.in_review,  sub: `${kpis.in_review_pct}%`,      icon: ShieldAlert, color: '#FFB800' },
+    { label: 'RINGS DETECTED', value: kpis.rings_detected, icon: Network,     color: '#FF4444' },
+  ]
 
   return (
     <div style={{ padding: 32, minHeight: '100vh' }}>
@@ -93,6 +83,7 @@ export default function Dashboard() {
           </h1>
           <p style={{ color: '#555', fontSize: 13 }}>
             Real-time fraud surveillance across the ecosystem
+            {liveData && <span style={{ marginLeft: 10, color: '#00D4AA', fontSize: 11 }}>● LIVE from MongoDB</span>}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -145,9 +136,22 @@ export default function Dashboard() {
             </div>
           </div>
           <RingNetworkGraph
-            data={MOCK_GRAPH_DATA}
-            onNodeClick={(node) => {
-              if (node.type === 'account') setSelectedClaim({ ...MOCK_CLAIM, account_id: node.id, fraud_score: node.risk_score || 50 })
+            data={graphData}
+            onNodeClick={async (node) => {
+              if (node.type === 'account') {
+                try {
+                  const data = await fetchClaims('ALL', 100);
+                  const claimMeta = data.claims?.find(c => c.account_id === node.id);
+                  if (claimMeta) {
+                    const fullClaim = await fetchClaim(claimMeta.id);
+                    setSelectedClaim(fullClaim);
+                  } else {
+                    setSelectedClaim({ account_id: node.id, fraud_score: node.risk_score || node.score || 0, fraud_tier: node.tier || 'TRUSTED', evidence: [] });
+                  }
+                } catch (e) {
+                  setSelectedClaim({ account_id: node.id, evidence: [] });
+                }
+              }
             }}
             height={580}
           />

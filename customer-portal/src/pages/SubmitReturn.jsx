@@ -1,5 +1,210 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Upload, AlertCircle, CheckCircle, Camera, FileText, ChevronDown, Loader2 } from 'lucide-react'
+
+function CameraCapture({ onCapture, onRetake, image }) {
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const ipImgRef = useRef(null)
+  const [devices, setDevices] = useState([])
+  const [selectedDevice, setSelectedDevice] = useState('')
+  const [useIpCam, setUseIpCam] = useState(false)
+  const [ipCamUrl, setIpCamUrl] = useState('http://100.89.91.92:8080/video')
+
+  useEffect(() => {
+    // Enumerate cameras
+    navigator.mediaDevices.enumerateDevices().then(deviceInfos => {
+      const videoDevices = deviceInfos.filter(d => d.kind === 'videoinput')
+      setDevices(videoDevices)
+      if (videoDevices.length > 0) {
+        // Prefer a back/environment camera if available, otherwise pick the first one
+        const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back'))
+        setSelectedDevice(backCamera ? backCamera.deviceId : videoDevices[0].deviceId)
+      }
+    })
+  }, [])
+
+  const startCamera = async (deviceId) => {
+    try {
+      // Stop existing tracks before switching
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(t => t.stop())
+      }
+      
+      const constraints = deviceId 
+        ? { video: { deviceId: { exact: deviceId } } }
+        : { video: { facingMode: 'environment' } }
+        
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+    } catch (err) {
+      console.error("Camera error:", err)
+      alert("Please allow camera access to process your return. File uploads are strictly not allowed.")
+    }
+  }
+
+  useEffect(() => {
+    if (!image && selectedDevice) {
+      startCamera(selectedDevice)
+    }
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [image, selectedDevice])
+
+  const handleCapture = () => {
+    // 1. Get GPS Location
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude }
+        performCapture(loc)
+      },
+      (err) => {
+        console.warn("Location denied or failed", err)
+        performCapture(null)
+      }
+    )
+  }
+
+  const performCapture = (location) => {
+    if (useIpCam && ipImgRef.current) {
+      // In a real scenario we'd draw to canvas, but IP cam images often have CORS blocked.
+      // So we will trigger a fetch to the /shot.jpg endpoint instead of canvas.toDataURL.
+      const shotUrl = ipCamUrl.replace('/video', '/shot.jpg')
+      fetch(shotUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader()
+          reader.onloadend = () => onCapture(reader.result, location)
+          reader.readAsDataURL(blob)
+        })
+        .catch(err => {
+          console.error("IP Cam capture failed (CORS?)", err)
+          alert("Failed to capture from IP Camera. Check CORS or use file upload.")
+        })
+    } else if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      canvas.getContext('2d').drawImage(video, 0, 0)
+      const base64 = canvas.toDataURL('image/jpeg', 0.8)
+      
+      video.srcObject.getTracks().forEach(track => track.stop())
+      onCapture(base64, location)
+    }
+  }
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      navigator.geolocation.getCurrentPosition(
+        pos => processFile(file, { lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => processFile(file, null)
+      )
+    }
+  }
+
+  const processFile = (file, location) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+      }
+      onCapture(reader.result, location)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#ccc' }}>
+          Item Photo (Live Capture Only) <span style={{ color: '#00D4AA' }}>*</span>
+        </label>
+        
+        {!image && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ color: '#888', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input type="checkbox" checked={useIpCam} onChange={e => setUseIpCam(e.target.checked)} />
+              IP Camera
+            </label>
+            {!useIpCam && devices.length > 1 && (
+              <select 
+                value={selectedDevice} 
+                onChange={(e) => setSelectedDevice(e.target.value)}
+                style={{ 
+                  background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                  padding: '4px 8px', borderRadius: 6, fontSize: 11, outline: 'none', maxWidth: 160
+                }}
+              >
+                {devices.map((d, i) => (
+                  <option key={d.deviceId} value={d.deviceId} style={{ color: '#000' }}>
+                    {d.label || `Camera ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+      </div>
+
+      {!image && useIpCam && (
+        <div style={{ marginBottom: 12 }}>
+          <input 
+            type="text" 
+            value={ipCamUrl}
+            onChange={e => setIpCamUrl(e.target.value)}
+            placeholder="http://100.89.91.92:8080/video"
+            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}
+          />
+        </div>
+      )}
+
+      <div style={{ 
+        background: '#0A0E1A', borderRadius: 12, overflow: 'hidden', 
+        border: '1px solid rgba(255,255,255,0.1)', position: 'relative',
+        minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        {image ? (
+          <div style={{ width: '100%', position: 'relative' }}>
+            <img src={image} style={{ width: '100%', display: 'block' }} alt="Captured item" />
+            <button type="button" onClick={onRetake} style={{
+              position: 'absolute', bottom: 16, right: 16, padding: '8px 16px',
+              background: 'rgba(0,0,0,0.6)', border: '1px solid #fff', 
+              borderRadius: 8, color: '#fff', fontSize: 12, cursor: 'pointer'
+            }}>Retake Photo</button>
+          </div>
+        ) : useIpCam ? (
+          <div style={{ width: '100%', position: 'relative' }}>
+            <img ref={ipImgRef} src={ipCamUrl} style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'cover' }} crossOrigin="anonymous" alt="IP Cam Feed" />
+            <button type="button" onClick={handleCapture} style={{
+              position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+              width: 56, height: 56, borderRadius: '50%', background: '#00D4AA',
+              border: '4px solid #fff', boxShadow: '0 0 10px rgba(0,0,0,0.5)', cursor: 'pointer'
+            }} />
+          </div>
+        ) : (
+          <div style={{ width: '100%', position: 'relative' }}>
+            <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'cover' }} />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <button type="button" onClick={handleCapture} style={{
+              position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+              width: 56, height: 56, borderRadius: '50%', background: '#00D4AA',
+              border: '4px solid #fff', boxShadow: '0 0 10px rgba(0,0,0,0.5)', cursor: 'pointer'
+            }} />
+          </div>
+        )}
+      </div>
+      
+
+    </div>
+  )
+}
 
 const CLAIM_TYPES = [
   { value: 'INR',            label: '📦 Item Not Received',      desc: 'Package never arrived' },
@@ -68,13 +273,18 @@ function SuccessScreen({ claimId }) {
 }
 
 export function SubmitReturn() {
+  const [searchParams] = useSearchParams()
+  const initialOrderId = searchParams.get('orderId') || ''
+  
   const [step, setStep] = useState(1)   // 1=form, 2=submitting, 3=done
   const [claimId, setClaimId] = useState(null)
   const [form, setForm] = useState({
-    orderId: '',
+    orderId: initialOrderId,
     claimType: '',
     description: '',
     consentGiven: false,
+    imageBase64: null,
+    location: null,
   })
   const [errors, setErrors] = useState({})
 
@@ -83,6 +293,7 @@ export function SubmitReturn() {
     if (!form.orderId.trim())    e.orderId   = 'Order ID is required'
     if (!form.claimType)         e.claimType = 'Please select a reason'
     if (!form.consentGiven)      e.consent   = 'You must agree to proceed'
+    if (!form.imageBase64)       e.image     = 'You must capture a live photo of the item'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -98,8 +309,10 @@ export function SubmitReturn() {
         orderId: form.orderId,
         claimType: form.claimType,
         description: form.description,
+        image_base64: form.imageBase64,
         consent_given: true,
-        accountId: 'DEMO-ACC-001',  // In production: from auth session
+        accountId: 'CUST-INNOCENT-001',  // Using demo account ID
+        location: form.location,
       }
 
       // Try real API, fallback gracefully for demo
@@ -158,6 +371,13 @@ export function SubmitReturn() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        <CameraCapture 
+          image={form.imageBase64}
+          onCapture={(base64, location) => { setForm(f => ({ ...f, imageBase64: base64, location })); setErrors(er => ({ ...er, image: '' })) }}
+          onRetake={() => setForm(f => ({ ...f, imageBase64: null, location: null }))}
+        />
+        {errors.image && <div style={{ fontSize: 13, color: '#FF6644', marginBottom: 20, textAlign: 'center' }}>{errors.image}</div>}
+
         {/* Order ID */}
         <FormField label="Order ID" required hint="Find this in your order confirmation email">
           <input
