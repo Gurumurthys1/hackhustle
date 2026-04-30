@@ -6,101 +6,109 @@ TriNetra AI is a production-grade, multi-layered return-fraud detection system f
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
-```
-Customer Portal (Vite:5174)  →  Return API (Spring Boot:8085)  →  Kafka (Redpanda:9092)
-                                                                          ↓
-Admin Dashboard (Vite:5173)  ←  DB (PostgreSQL:5433)  ←  Celery Workers (image/receipt/carrier/graph)
-                                                              ↑
-                                               Fraud Engine (FastAPI:8000)
-                                               Graph Service (FastAPI:8001)
+Our architecture is built on a modern, event-driven, Python and JavaScript stack, optimized for real-time computer vision inference and graph analysis.
+
+```mermaid
+graph TD
+    %% Styling
+    classDef frontend fill:#1E293B,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
+    classDef backend fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#F8FAFC
+    classDef db fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC
+    classDef ai fill:#1E293B,stroke:#8B5CF6,stroke-width:2px,color:#F8FAFC
+    classDef device fill:#1E293B,stroke:#F43F5E,stroke-width:2px,color:#F8FAFC
+
+    %% Client Layer
+    subgraph Client Layer
+        CP["🖥️ Customer Portal<br/>(React + Vite)"]:::frontend
+        AD["📊 Admin Dashboard<br/>(React + Vite)"]:::frontend
+        IPCam["📱 Mobile/IP Camera<br/>(Live Video Capture)"]:::device
+    end
+
+    %% Backend Layer
+    subgraph API & Microservices
+        FE["⚙️ Fraud Engine API<br/>(FastAPI + Uvicorn)"]:::backend
+    end
+
+    %% Intelligence Layer
+    subgraph Core AI Intelligence Layer
+        CV["👁️ Computer Vision<br/>TensorFlow / ELA / CLIP"]:::ai
+        GEO["📍 Geolocation Analysis<br/>Carrier GPS Validation"]:::ai
+        GRAPH["🕸️ Network Analysis<br/>Fraud Ring Detection"]:::ai
+        BEHAV["👤 Behavioral Engine<br/>Return Velocity & History"]:::ai
+    end
+
+    %% Data Layer
+    subgraph Data Layer
+        MONGO[("🗄️ MongoDB Atlas<br/>(Document & Graph Data)")]:::db
+    end
+
+    %% Connections
+    IPCam -- "Live Video Stream" --> CP
+    CP -- "1. Submit Evidence + GPS" --> FE
+    AD -- "Fetch Claims & Visuals" --> FE
+    
+    FE -- "2. Analyze Pixels" --> CV
+    FE -- "3. Verify Carrier Location" --> GEO
+    FE -- "4. Link Account Graph" --> GRAPH
+    FE -- "5. Run Historical DB Checks" --> BEHAV
+    
+    FE <== "6. Read/Write Evidence & Scores" ==> MONGO
+    CV -.-> MONGO
+    GRAPH -.-> MONGO
 ```
 
-### Open-Source Stack
+### Modern Open-Source Stack
 | Component | Technology |
 |---|---|
-| API Gateway | Traefik v3 |
-| Return API | Spring Boot 3.2 / Java 21 |
-| Fraud Engine | FastAPI / Python 3.11 |
-| Graph Service | FastAPI + NetworkX (Louvain) |
-| Async Workers | Celery + Redis |
-| Message Queue | Redpanda (Kafka-compatible) |
-| Database | PostgreSQL 16 |
-| Object Storage | MinIO (S3-compatible) |
-| OCR | Tesseract 5 + PyMuPDF |
-| Visual AI | HuggingFace CLIP (local inference) |
-| Image Forensics | PIL/Pillow (ELA), piexif, imagehash |
-| Monitoring | Prometheus + Grafana |
-| Frontend | React 18 + Vite + D3.js |
+| Frontend Framework | React 18 + Vite |
+| Backend API | FastAPI / Python 3.10+ |
+| Database | MongoDB Atlas |
+| Visual AI | HuggingFace CLIP (local inference), TensorFlow |
+| Image Forensics | PIL/Pillow (ELA), imagehash, EXIF tools |
+| Graph Visualization| Recharts, Force-Directed Graphs |
+| Device Capture | HTML5 Geolocation API, IP Webcam Integration |
 
 ---
 
 ## 🚀 Quick Start
 
-### Step 1 — Start Infrastructure
+### Step 1 — Setup Environment
+
+Copy the environment template and configure your MongoDB Atlas connection.
 
 ```powershell
-# Full production stack (all services)
-docker-compose -f infrastructure/docker-compose.yml up -d
-
-# OR minimal dev (just postgres + redis)
-docker-compose up -d
-```
-
-### Step 2 — Set Environment Variables
-
-```powershell
-# Copy the template
 copy .env.example .env
-
-# OR use the PowerShell startup script (sets all vars automatically)
-.\start_services.ps1
+# Edit .env to add your MONGODB_URI
 ```
 
-### Step 3 — Start Python Services
+### Step 2 — Start the Fraud Engine Backend (FastAPI)
 
 ```powershell
-# Set PYTHONPATH to resolve cross-service imports
-$env:PYTHONPATH = "services\common;services\fraud-engine;services\workers"
-
-# Fraud Engine (port 8000)
 cd services\fraud-engine
+pip install -r requirements.txt
+
+# Start the server on port 8000 (accessible on local network)
 uvicorn main:app --port 8000 --host 0.0.0.0 --reload
-
-# Graph Service (port 8001)
-cd services\graph-service
-uvicorn main:app --port 8001 --host 0.0.0.0 --reload
-
-# Celery Workers (in services\ directory)
-cd services
-celery -A workers.celery_app worker -Q image,receipt,carrier,behavioral,graph,aggregator --loglevel=info
-
-# Kafka Consumer Bridge
-cd services\fraud-engine
-python kafka_consumer.py
 ```
 
-### Step 4 — Start Return API (Spring Boot)
+### Step 3 — Start Frontend Apps (Vite)
 
+**Admin Dashboard:**
 ```powershell
-cd services\return-api
-mvn spring-boot:run
-# API available at http://localhost:8085
-```
-
-### Step 5 — Start Frontend Apps
-
-```powershell
-# Admin Dashboard (port 5173)
 cd dashboard
 npm install
 npm run dev
+# Running on http://localhost:5173
+```
 
-# Customer Portal (port 5174)
+**Customer Portal:**
+```powershell
 cd customer-portal
 npm install
 npm run dev
+# Running on http://localhost:5174
 ```
 
 ---
@@ -110,63 +118,50 @@ npm run dev
 | Service | URL | Description |
 |---|---|---|
 | Admin Dashboard | http://localhost:5173 | Intelligence Center, Claims Queue, Fraud Rings |
-| Customer Portal | http://localhost:5174 | Submit & Track Returns |
-| Return API | http://localhost:8085 | Spring Boot REST API |
-| Fraud Engine | http://localhost:8000/docs | FastAPI Swagger UI |
-| Graph Service | http://localhost:8001/docs | Graph Intelligence API |
-| Grafana | http://localhost:3001 | Monitoring (admin/admin) |
-| Prometheus | http://localhost:9090 | Metrics scraper |
-| MinIO Console | http://localhost:9001 | Object storage (trinetra/trinetra_dev_secret) |
-| Redpanda Console | http://localhost:8081 | Kafka topics viewer |
-| Traefik Dashboard | http://localhost:8090 | API gateway |
+| Customer Portal | http://localhost:5174 | Submit Returns, Upload Images, IP Camera Demo |
+| Fraud Engine API | http://localhost:8000 | FastAPI Endpoint |
+| API Documentation | http://localhost:8000/docs | Swagger UI for Fraud Engine |
 
 ---
 
-## 🕵️ Fraud Detection Stack
+## 🕵️ Fraud Detection Intelligence
 
-### 1. Image Forensics (`services/common/ml/`)
+### 1. Image Forensics (`ml/`)
 - **ELA (Error Level Analysis)** — detects pixel-level editing via JPEG re-compression delta
 - **EXIF Metadata** — flags photos taken before purchase date, missing GPS in damage claims
 - **pHash (Perceptual Hash)** — detects recycled images reused across multiple claims
 - **CLIP Similarity** — compares returned item vs. official product catalog image
 
-### 2. Document AI
-- **Tesseract OCR** — extracts amount, date, SKU from receipt images
-- **PyMuPDF** — detects suspicious font layers in PDF receipts (text replacement)
-
-### 3. Behavioral Analytics
+### 2. Behavioral Analytics
 - Return rate percentile (vs. category peers)
-- INR claim frequency (90-day window)
+- INR (Item Not Received) claim frequency (90-day window)
 - Wardrobing score (purchase-to-return timing)
-- Chargeback history
 
-### 4. Graph Intelligence (`services/graph-service/`)
-- **Louvain community detection** — finds fraud rings from shared entity clusters
-- **PageRank** — identifies ring leaders vs. mules
-- **Temporal burst detection** — coordinated claims in 3-hour windows
-- Shared device fingerprint, IP cluster, address sharing
+### 3. Graph Intelligence
+- Finds fraud rings from shared entity clusters
+- Connects overlapping device fingerprints, IP clusters, and shipping addresses
+- Highlights orchestrated "Burst Returns" from connected actors
 
-### 5. Carrier Validation
-- Delivery confirmation cross-check for INR claims
-- Scan history city mismatch detection
-- Proof of delivery photo availability
+### 4. Carrier Validation & Geolocation
+- Delivery confirmation cross-check using HTML5 Geolocation API
+- Distance calculation to ensure the claim was filed at the legitimate delivery address
 
 ---
 
-## 📊 Fraud Score Tiers
+## 📊 Fraud Score Action Tiers
 
 | Score | Tier | Action |
 |---|---|---|
 | 0–29 | 🟢 TRUSTED | Auto-approve (no human needed) |
 | 30–59 | 🟡 CAUTION | Request additional photo |
-| 60–79 | 🟠 ELEVATED_RISK | Queue for human review (24hr SLA) |
-| 80–100 | 🔴 HIGH_RISK | Escalate to senior reviewer (4hr SLA) |
+| 60–79 | 🟠 ELEVATED_RISK | Queue for human review |
+| 80–100 | 🔴 HIGH_RISK | Escalate to senior reviewer / Fraud Team |
 
 ---
 
 ## ⚖️ Compliance (DPDPA 2023)
 
-The following compliance rules are enforced at **startup** — the service will not start if any are violated:
+The following compliance rules are enforced via the backend compliance checker:
 
 | Rule | Status |
 |---|---|
@@ -175,48 +170,42 @@ The following compliance rules are enforced at **startup** — the service will 
 | Biometric processing requires explicit KYC consent | ✅ `BIOMETRIC_PROCESSING_ENABLED=false` |
 | Auto-blocking accounts disabled (Consumer Protection Act) | ✅ `AUTO_BLOCK_ENABLED=false` |
 | Fraud score never exposed to customer | ✅ `CUSTOMER_SCORE_EXPOSED=false` |
-| Customer Right to Explanation | ✅ `GET /api/v1/returns/{id}/explanation` |
-| Immutable audit log (DELETE/UPDATE revoked) | ✅ PostgreSQL rules enforced |
-| Data retention capped at 24 months | ✅ `DATA_RETENTION_DAYS=730` |
 
 ---
 
 ## 🧪 Demo Scenarios
 
-| Scenario | Account ID | Expected Score | Trigger |
+| Scenario | Account ID | Expected Score | Expected Result |
 |---|---|---|---|
-| Legitimate customer | `CUST-INNOCENT-001` | 0–15 | Auto-approved in seconds |
-| Fraudulent claim | `CUST-FRAUDSTER-002` | 65–80 | Elevated risk, queued for review |
-| Fraud ring member | `CUST-RING-003` | 85–99 | High risk, escalated |
-| Track return | Portal: `CLM-DEMO-001` | — | Approved status |
-| Track review | Portal: `CLM-DEMO-002` | — | Under review status |
+| Legitimate customer | `CUST-INNOCENT-001` | 0–15 | Auto-approved instantly |
+| Suspicious claim | `CUST-FRAUDSTER-002` | 65–80 | Elevated risk, queued for review |
+| Fraud ring member | `CUST-RING-003` | 85–99 | Critical risk, escalated + network tagged |
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 trinetra-ai/
 ├── services/
-│   ├── fraud-engine/         # FastAPI — scoring, ELA, EXIF, CLIP, OCR, compliance
-│   ├── graph-service/        # FastAPI — ring detection, D3-ready graph API
-│   ├── return-api/           # Spring Boot 3.2 — submit/track returns, Kafka publish
-│   ├── workers/              # Celery — image, receipt, carrier, behavioral, graph, aggregator
-│   └── common/ml/            # Shared ML modules (ELA, CLIP, pHash, OCR, EXIF)
-├── dashboard/                # React 18 + Vite — admin intelligence center
-├── customer-portal/          # React 18 + Vite — customer submit & track
-├── infrastructure/
-│   ├── docker-compose.yml    # Full production stack
-│   ├── postgres/init.sql     # Complete schema + seed data
-│   └── monitoring/
-│       └── prometheus.yml    # Scrape configs for all services
-├── docker-compose.yml        # Dev quickstart (postgres + redis only)
-├── .env.example              # All environment variables documented
-├── start_services.ps1        # Windows PowerShell startup script
+│   ├── fraud-engine/         # FastAPI Backend
+│   │   ├── main.py           # Core API & Submit Return Logic
+│   │   ├── compliance/       # DPDPA Compliance Checks
+│   │   └── scoring/          # Score Calculator Engine
+│   └── common/
+│       ├── db.py             # MongoDB Connection Utility
+│       └── ml/               # AI/ML Computer Vision Pipeline (ELA, CLIP)
+├── dashboard/                # Admin Dashboard (React 18 + Vite)
+│   ├── src/pages/            # Dashboard, Claims, Fraud Rings
+│   └── src/components/       # Enterprise Evidence UI, Graphs
+├── customer-portal/          # Customer App (React 18 + Vite)
+│   ├── src/pages/            # Returns Submission Flow
+│   └── src/components/       # IP Camera Feed, Geolocation Capture
+├── infrastructure/           
+│   └── mongodb/              # Database Seeding Scripts
 └── README.md                 # This file
 ```
 
 ---
 
 *TriNetra AI — Securing the Future of E-commerce Returns through Intelligence and Trust.*
-*Built with: PostgreSQL · Redis · Redpanda · MinIO · FastAPI · Spring Boot · NetworkX · HuggingFace CLIP · Tesseract · PyMuPDF · D3.js · Celery · Prometheus · Grafana · Traefik*
