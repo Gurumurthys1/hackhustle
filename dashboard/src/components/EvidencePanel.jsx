@@ -3,10 +3,10 @@ import { Shield, AlertTriangle, CheckCircle, XCircle,
          Eye, FileText, Network, Package } from 'lucide-react';
 
 const SEVERITY_STYLES = {
-  CRITICAL: { bg: 'rgba(255,68,68,0.15)', border: '#FF4444', icon: XCircle, color: '#FF4444' },
-  HIGH:     { bg: 'rgba(255,68,68,0.08)', border: '#FF6644', icon: AlertTriangle, color: '#FF6644' },
-  MEDIUM:   { bg: 'rgba(255,184,0,0.08)', border: '#FFB800', icon: AlertTriangle, color: '#FFB800' },
-  LOW:      { bg: 'rgba(0,212,170,0.08)', border: '#00D4AA', icon: Shield, color: '#00D4AA' },
+  CRITICAL: { bg: '#2C1D1D', border: '#5C2D2D', icon: XCircle, color: '#E57373' },
+  HIGH:     { bg: '#2A2016', border: '#5C4020', icon: AlertTriangle, color: '#FFB74D' },
+  MEDIUM:   { bg: '#2A2616', border: '#5C5420', icon: AlertTriangle, color: '#FFF176' },
+  LOW:      { bg: '#162A24', border: '#205C46', icon: Shield, color: '#81C784' },
 };
 
 const CATEGORY_ICONS = {
@@ -35,10 +35,10 @@ export function EvidencePanel({ claim, onDecision }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   const tierColors = {
-    TRUSTED:      '#00FF88',
-    CAUTION:      '#FFB800',
-    ELEVATED_RISK:'#FF6644',
-    HIGH_RISK:    '#FF4444',
+    TRUSTED:      '#81C784',
+    CAUTION:      '#FFF176',
+    ELEVATED_RISK:'#FFB74D',
+    HIGH_RISK:    '#E57373',
   };
 
   const computedSubScores = { image: 0, receipt: 0, behavioral: 0, carrier: 0, graph: 0 };
@@ -63,89 +63,85 @@ export function EvidencePanel({ claim, onDecision }) {
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 16,
+      background: '#1A1C20', // Clean dark grey background
+      border: '1px solid #2A2D35',
+      borderRadius: 12,
       padding: 24,
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
       gap: 20,
-      fontFamily: 'Sora, sans-serif',
-      color: '#fff'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      color: '#E0E0E0'
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ color: '#888', fontSize: 11, letterSpacing: 2, marginBottom: 4 }}>
-            CLAIM EVIDENCE REVIEW
+          <div style={{ color: '#88909D', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, marginBottom: 4 }}>
+            Claim Evidence Review
           </div>
-          <div style={{ color: '#fff', fontFamily: 'Space Mono, monospace', fontSize: 13 }}>
-            CUS-****-{claim?.account_id?.slice(-4)}
+          <div style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 500 }}>
+            {claim?.account_id ? `CUS-${claim.account_id.slice(0,4)}...${claim.account_id.slice(-4)}` : 'Unknown Account'}
           </div>
         </div>
         
-        {/* Fraud Score Ring */}
-        <div style={{ position: 'relative', width: 72, height: 72 }}>
-          <svg width={72} height={72} viewBox="0 0 72 72">
-            <circle cx={36} cy={36} r={30} fill="none" 
-              stroke="rgba(255,255,255,0.1)" strokeWidth={6} />
-            <circle cx={36} cy={36} r={30} fill="none"
-              stroke={tierColors[claim?.fraud_tier] || '#00FF88'} strokeWidth={6}
-              strokeDasharray={`${(claim?.fraud_score / 100) * 188.5} 188.5`}
+        {/* Modern Flat Score Meter */}
+        <div style={{ position: 'relative', width: 64, height: 64 }}>
+          <svg width={64} height={64} viewBox="0 0 64 64">
+            <circle cx={32} cy={32} r={28} fill="none" 
+              stroke="#2A2D35" strokeWidth={5} />
+            <circle cx={32} cy={32} r={28} fill="none"
+              stroke={tierColors[claim?.fraud_tier] || '#81C784'} strokeWidth={5}
+              strokeDasharray={`${(claim?.fraud_score / 100) * 175.9} 175.9`}
               strokeLinecap="round"
-              transform="rotate(-90 36 36)"
-              style={{ filter: `drop-shadow(0 0 6px ${tierColors[claim?.fraud_tier]})` }} />
+              transform="rotate(-90 32 32)" />
           </svg>
           <div style={{
             position: 'absolute', inset: 0, display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column'
           }}>
-            <span style={{ color: '#fff', fontSize: 18, fontWeight: 700,
-                           fontFamily: 'Space Mono, monospace' }}>
-              {claim?.fraud_score}
+            <span style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 600 }}>
+              {claim?.fraud_score || 0}
             </span>
-            <span style={{ color: '#888', fontSize: 9 }}>/ 100</span>
           </div>
         </div>
       </div>
 
       {/* Sub-scores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
         {Object.entries(CATEGORY_ICONS).map(([key, { icon: Icon, label }]) => (
           <div key={key} style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 8, padding: '8px 4px', textAlign: 'center'
+            background: '#202329',
+            border: '1px solid #2A2D35',
+            borderRadius: 8, padding: '12px 8px', textAlign: 'center'
           }}>
-            <Icon size={14} color="#00D4AA" style={{ marginBottom: 4 }} />
-            <div style={{ color: '#fff', fontSize: 13, fontWeight: 700,
-                          fontFamily: 'Space Mono, monospace' }}>
+            <Icon size={16} color="#88909D" style={{ marginBottom: 6 }} />
+            <div style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
               +{finalSubScores[key] || 0}
             </div>
-            <div style={{ color: '#888', fontSize: 9, marginTop: 2 }}>{label}</div>
+            <div style={{ color: '#88909D', fontSize: 10, lineHeight: 1.2 }}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Visual Image Comparison */}
       {(claim?.expected_product_image || claim?.captured_image_base64) && (
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 16 }}>
-          <div style={{ color: '#888', fontSize: 11, letterSpacing: 2, marginBottom: 12, textAlign: 'center' }}>
-            VISUAL INSPECTION
+        <div style={{ background: '#202329', border: '1px solid #2A2D35', borderRadius: 8, padding: 16 }}>
+          <div style={{ color: '#88909D', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
+            Visual Inspection
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
             {claim?.expected_product_image && (
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>EXPECTED ITEM</div>
-                <img src={claim.expected_product_image} alt="Expected" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: '#88909D', marginBottom: 8, textTransform: 'uppercase' }}>Expected Item</div>
+                <img src={claim.expected_product_image} alt="Expected" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 6, border: '1px solid #2A2D35' }} />
               </div>
             )}
             {claim?.captured_image_base64 && (
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>RETURNED ITEM</div>
-                <img src={claim.captured_image_base64} alt="Returned" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: '#88909D', marginBottom: 8, textTransform: 'uppercase' }}>Returned Item</div>
+                <img src={claim.captured_image_base64} alt="Returned" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 6, border: '1px solid #2A2D35' }} />
               </div>
             )}
           </div>
@@ -153,9 +149,9 @@ export function EvidencePanel({ claim, onDecision }) {
       )}
 
       {/* Evidence List */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: '#888', fontSize: 11, letterSpacing: 2, marginBottom: 4 }}>
-          EVIDENCE LOG
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ color: '#88909D', fontSize: 12, fontWeight: 600, marginTop: 4 }}>
+          Evidence Log
         </div>
         {claim?.evidence?.map((ev, i) => {
           const type = ev.signal || ev.type || 'UNKNOWN_SIGNAL';
@@ -173,55 +169,55 @@ export function EvidencePanel({ claim, onDecision }) {
             <div key={i} style={{
               background: style.bg,
               border: `1px solid ${style.border}`,
-              borderRadius: 8, padding: '10px 14px',
-              display: 'flex', gap: 10, alignItems: 'flex-start'
+              borderRadius: 8, padding: '12px 16px',
+              display: 'flex', gap: 12, alignItems: 'flex-start'
             }}>
-              <Icon size={14} color={style.color} style={{ marginTop: 2, flexShrink: 0 }} />
-              <div>
-                <div style={{ color: style.color, fontSize: 10, letterSpacing: 1,
-                              fontFamily: 'Space Mono, monospace', marginBottom: 2 }}>
-                  {type} · +{points}pts
+              <Icon size={16} color={style.color} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ color: style.color, fontSize: 13, fontWeight: 600 }}>{type}</span>
+                  <span style={{ color: style.color, fontSize: 12, fontWeight: 500, background: `${style.color}20`, padding: '2px 6px', borderRadius: 4 }}>+{points} pts</span>
                 </div>
-                <div style={{ color: '#ccc', fontSize: 12 }}>{ev.detail}</div>
+                <div style={{ color: '#B0B5BF', fontSize: 13, lineHeight: 1.4 }}>{ev.detail}</div>
               </div>
             </div>
           );
         })}
         
         {(!claim?.evidence || claim.evidence.length === 0) && (
-          <div style={{ color: '#555', textAlign: 'center', padding: 20 }}>
-            <CheckCircle size={24} color="#00FF88" style={{ marginBottom: 8 }} />
-            <div>No fraud signals detected</div>
+          <div style={{ color: '#88909D', textAlign: 'center', padding: 32, background: '#202329', borderRadius: 8, border: '1px dashed #2A2D35' }}>
+            <CheckCircle size={24} color="#81C784" style={{ marginBottom: 12, marginInline: 'auto' }} />
+            <div style={{ fontSize: 14 }}>No fraud signals detected</div>
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 12, marginTop: 'auto' }}>
         <button onClick={() => onDecision('APPROVE')} style={{
           flex: 1, padding: '12px 0',
-          background: 'rgba(0,255,136,0.15)', border: '1px solid #00FF88',
-          borderRadius: 8, color: '#00FF88', cursor: 'pointer',
-          fontFamily: 'Space Mono, monospace', fontSize: 12,
+          background: '#2E4C3E', border: '1px solid #3A6350',
+          borderRadius: 6, color: '#A5D6B7', cursor: 'pointer',
+          fontWeight: 600, fontSize: 13,
           transition: 'all 0.2s'
         }}>
-          ✓ APPROVE
+          Approve
         </button>
         <button onClick={() => onDecision('REQUEST_INFO')} style={{
           flex: 1, padding: '12px 0',
-          background: 'rgba(255,184,0,0.15)', border: '1px solid #FFB800',
-          borderRadius: 8, color: '#FFB800', cursor: 'pointer',
-          fontFamily: 'Space Mono, monospace', fontSize: 12
+          background: '#4A3E26', border: '1px solid #635334',
+          borderRadius: 6, color: '#FFE082', cursor: 'pointer',
+          fontWeight: 600, fontSize: 13
         }}>
-          ? MORE INFO
+          Request Info
         </button>
         <button onClick={() => onDecision('ESCALATE')} style={{
           flex: 1, padding: '12px 0',
-          background: 'rgba(255,68,68,0.15)', border: '1px solid #FF4444',
-          borderRadius: 8, color: '#FF4444', cursor: 'pointer',
-          fontFamily: 'Space Mono, monospace', fontSize: 12
+          background: '#5C2D2D', border: '1px solid #7D3B3B',
+          borderRadius: 6, color: '#EF9A9A', cursor: 'pointer',
+          fontWeight: 600, fontSize: 13
         }}>
-          ↑ ESCALATE
+          Escalate
         </button>
       </div>
     </div>
