@@ -12,49 +12,43 @@ Our architecture is built on a modern, event-driven, Python and JavaScript stack
 
 ```mermaid
 graph TD
-    %% Styling
     classDef frontend fill:#1E293B,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC
     classDef backend fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#F8FAFC
     classDef db fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC
     classDef ai fill:#1E293B,stroke:#8B5CF6,stroke-width:2px,color:#F8FAFC
     classDef device fill:#1E293B,stroke:#F43F5E,stroke-width:2px,color:#F8FAFC
 
-    %% Client Layer
-    subgraph Client Layer
-        CP["🖥️ Customer Portal<br/>(React + Vite)"]:::frontend
-        AD["📊 Admin Dashboard<br/>(React + Vite)"]:::frontend
-        IPCam["📱 Mobile/IP Camera<br/>(Live Video Capture)"]:::device
+    subgraph Client_Layer [Client Layer]
+        CP["🖥️ Customer Portal (React + Vite)"]:::frontend
+        AD["📊 Admin Dashboard (React + Vite)"]:::frontend
+        IPCam["📱 Mobile/IP Camera (Live Capture)"]:::device
     end
 
-    %% Backend Layer
-    subgraph API & Microservices
-        FE["⚙️ Fraud Engine API<br/>(FastAPI + Uvicorn)"]:::backend
+    subgraph API_Services [API & Microservices]
+        FE["⚙️ Fraud Engine API (FastAPI)"]:::backend
     end
 
-    %% Intelligence Layer
-    subgraph Core AI Intelligence Layer
-        CV["👁️ Computer Vision<br/>TensorFlow / ELA / CLIP"]:::ai
-        GEO["📍 Geolocation Analysis<br/>Carrier GPS Validation"]:::ai
-        GRAPH["🕸️ Network Analysis<br/>Fraud Ring Detection"]:::ai
-        BEHAV["👤 Behavioral Engine<br/>Return Velocity & History"]:::ai
+    subgraph Core_AI [Core AI Intelligence Layer]
+        CV["👁️ Computer Vision (TensorFlow / ELA)"]:::ai
+        GEO["📍 Geolocation Analysis (Carrier GPS)"]:::ai
+        GRAPH["🕸️ Network Analysis (Fraud Rings)"]:::ai
+        BEHAV["👤 Behavioral Engine (Velocity)"]:::ai
     end
 
-    %% Data Layer
-    subgraph Data Layer
-        MONGO[("🗄️ MongoDB Atlas<br/>(Document & Graph Data)")]:::db
+    subgraph Data_Layer [Data Layer]
+        MONGO[("🗄️ MongoDB Atlas (Document & Graph DB)")]:::db
     end
 
-    %% Connections
-    IPCam -- "Live Video Stream" --> CP
-    CP -- "1. Submit Evidence + GPS" --> FE
-    AD -- "Fetch Claims & Visuals" --> FE
+    IPCam -->|"Live Video Stream"| CP
+    CP -->|"1. Submit Evidence + GPS"| FE
+    AD -->|"Fetch Claims & Visuals"| FE
     
-    FE -- "2. Analyze Pixels" --> CV
-    FE -- "3. Verify Carrier Location" --> GEO
-    FE -- "4. Link Account Graph" --> GRAPH
-    FE -- "5. Run Historical DB Checks" --> BEHAV
+    FE -->|"2. Analyze Pixels"| CV
+    FE -->|"3. Verify Carrier Location"| GEO
+    FE -->|"4. Link Account Graph"| GRAPH
+    FE -->|"5. Run Historical Checks"| BEHAV
     
-    FE <== "6. Read/Write Evidence & Scores" ==> MONGO
+    FE == "6. Read/Write Evidence & Scores" ==> MONGO
     CV -.-> MONGO
     GRAPH -.-> MONGO
 ```
