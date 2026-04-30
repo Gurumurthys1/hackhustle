@@ -48,23 +48,6 @@ graph TD
     D_CLIP --> SE["Score engine<br/>0–100 · 4 tiers"]:::spring
     GS --> SE
     
-    subgraph Infra [—— infrastructure layer ——]
-        style Infra fill:transparent,stroke:none,color:#999
-        direction LR
-        PG["PostgreSQL"]:::infra
-        REDIS["Redis"]:::infra
-        MINIO["MinIO"]:::infra
-        TRAEFIK["Traefik"]:::infra
-        PROM["Prometheus"]:::prom
-        GRAF["Grafana"]:::prom
-    end
-    
-    %% Force vertical alignment
-    SE ~~~ Infra
-    
-    DPDPA["DPDPA compliance layer<br/>Consent · immutable audit log · no auto-block · data retention 24 months"]:::dpdpa
-    
-    Infra ~~~ DPDPA
 ```
 
 ### Modern Open-Source Stack
